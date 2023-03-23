@@ -255,7 +255,46 @@ class server:
                     #                    (username, time)
                     #         with open('./Serverlog.txt', 'a', encoding='utf-8') as list:
                     #             list.write(loginlog)
-
+                    if Command == 'Register':
+                        username = header['user']
+                        password = header['password']
+                        time = header['time']
+                        sql = "select * from user where username = '%s'" % (username)
+                        cursor.execute(sql)
+                        data = cursor.fetchone()
+                        if data:
+                            # 定义文件头信息，包含文件名和文件大小
+                            header = {
+                                'Feedback': 'Register',
+                                'stat': 'Exist',
+                                'fileSize': '',
+                                'user': username
+                            }
+                            header_hex = bytes(json.dumps(header).encode('utf-8'))
+                            fhead = struct.pack('128s', header_hex)
+                            connection.send(fhead)
+                            loginlog = loginlog = '\n%s try to register at "%s" , Stat: Fail ,Username already be used' % \
+                                       (username, time)
+                            with open('./Serverlog.txt', 'a', encoding='utf-8') as list:
+                                list.write(loginlog)
+                        else:
+                            sql = "insert into user values ('','%s','%s')"%(username,password)
+                            cursor.execute(sql)
+                            db.commit()
+                            # 定义文件头信息，包含文件名和文件大小
+                            header = {
+                                'Feedback': 'Register',
+                                'stat': 'Success',
+                                'fileSize': '',
+                                'user': username
+                            }
+                            header_hex = bytes(json.dumps(header).encode('utf-8'))
+                            fhead = struct.pack('128s', header_hex)
+                            connection.send(fhead)
+                            loginlog = '\n%s try to register at "%s" , Stat: Success ' % \
+                                       (username, time)
+                            with open('./Serverlog.txt', 'a', encoding='utf-8') as list:
+                                list.write(loginlog)
 
              except socket.timeout:
                  connection.close()
@@ -263,8 +302,6 @@ class server:
              except ConnectionResetError:
                  connection.close()
                  break
-
-
 
 
 if __name__ == "__main__":

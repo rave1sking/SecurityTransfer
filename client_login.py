@@ -16,6 +16,7 @@ class SignInWidget(QWidget):
     filename = './ClientCache/result.txt'
     results = []
 
+
     def __init__(self):
         super(SignInWidget, self).__init__()
         self.resize(900, 600)
