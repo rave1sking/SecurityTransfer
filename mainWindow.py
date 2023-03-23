@@ -8,6 +8,8 @@ from PyQt5.QtCore import Qt
 import qdarkstyle
 from PyQt5.QtSql import *
 from client import *
+import json
+import re
 
 class BookStorageViewer(QWidget):
     def __init__(self):
@@ -27,7 +29,6 @@ class BookStorageViewer(QWidget):
         # 每页数据数
         self.pageRecord = 10
         self.setUpUI()
-
     def setUpUI(self):
         self.layout = QVBoxLayout()
         self.Hlayout1 = QHBoxLayout()
@@ -85,32 +86,55 @@ class BookStorageViewer(QWidget):
         self.Hlayout2.addWidget(widget)
 
         # tableView
-        # 序号，文件名，上传用户，大小，上传时间，库存，剩余可借
-        self.db = QSqlDatabase.addDatabase("QSQLITE")
-        self.db.setDatabaseName('./db/LibraryManagement.db')
-        self.db.open()
+
+        self.results = []
+        self.n = len(self.results)
+
+        self.model = QStandardItemModel(self.n, 4)
+        self.model.setHorizontalHeaderLabels(['文件名', '上传者', '文件大小', '时间'])
+
+        # with open('./ClientCache/result.txt', 'r', encoding='utf-8') as f:
+        #     for line in f:
+        #         # Parse the JSON object
+        #         obj = json.loads(line)
+        #         # Extract the fields using regular expressions
+        #         filename = re.search(r'"文件名":\s*"(.+?)"', line).group(1)
+        #         uploader = re.search(r'"上传者":\s*"(.+?)"', line).group(1)
+        #         upload_time = re.search(r'"上传时间":\s*"(.+?)"', line).group(1)
+        #         size = re.search(r'"大小":\s*"(.+?)"', line).group(1)
+        #         self.results.append({filename, uploader, upload_time, size})
+        # for row_num, row_data in enumerate(self.results):
+        #     for idx, item in enumerate(row_data):
+        #         qitem = QStandardItem(item)
+        #         self.model.setItem(row_num, idx, qitem)
+
         self.tableView = QTableView()
         self.tableView.horizontalHeader().setStretchLastSection(True)
         self.tableView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.queryModel = QSqlQueryModel()
         #self.searchButtonClicked()
-        self.tableView.setModel(self.queryModel)
+        self.tableView.setModel(self.model)
 
-        self.queryModel.setHeaderData(0, Qt.Horizontal, "文件名")
-        self.queryModel.setHeaderData(1, Qt.Horizontal, "上传者")
-        self.queryModel.setHeaderData(2, Qt.Horizontal, "上传时间")
-        self.queryModel.setHeaderData(3, Qt.Horizontal, "大小")
+        self.UpdateButton = QPushButton("更新文件列表")
+        self.UpdateButton.setFixedHeight(32)
+        self.UpdateButton.setFont(font)
+        self.UpdateButton.clicked.connect(self.updatefile)
+
+        self.Hlayout3 = QHBoxLayout()
+        self.Hlayout3.addWidget(self.UpdateButton)
 
         self.layout.addLayout(self.Hlayout1)
         self.layout.addWidget(self.tableView)
+        #self.layout.addLayout()
         self.layout.addLayout(self.Hlayout2)
+        self.layout.addLayout(self.Hlayout3)
+
         self.setLayout(self.layout)
 
         self.prevButton.clicked.connect(self.prevButtonClicked)
         self.backButton.clicked.connect(self.backButtonClicked)
         self.jumpToButton.clicked.connect(self.jumpToButtonClicked)
-
+        QApplication.processEvents()
     def setButtonStatus(self):
         if(self.currentPage==self.totalPage):
             self.prevButton.setEnabled(True)
@@ -129,64 +153,6 @@ class BookStorageViewer(QWidget):
 
 
     # 分页记录查询
-    def recordQuery(self, index):
-        queryCondition = ""
-        # conditionChoice = self.condisionComboBox.currentText()
-        # if (conditionChoice == "按书名查询"):
-        #     conditionChoice = 'BookName'
-        # elif (conditionChoice == "按书号查询"):
-        #     conditionChoice = 'BookId'
-        # elif (conditionChoice == "按作者查询"):
-        #     conditionChoice = 'Auth'
-        # elif (conditionChoice == '按分类查询'):
-        #     conditionChoice = 'Category'
-        # else:
-        #     conditionChoice = 'Publisher'
-
-        # if (self.searchEdit.text() == ""):
-        #     queryCondition = "select * from Book"
-        #     self.queryModel.setQuery(queryCondition)
-        #     self.totalRecord = self.queryModel.rowCount()
-        #     self.totalPage = int((self.totalRecord + self.pageRecord - 1) / self.pageRecord)
-        #     label = "/" + str(int(self.totalPage)) + "页"
-        #     self.pageLabel.setText(label)
-        #     queryCondition = ("select * from Book ORDER BY %s  limit %d,%d " % (conditionChoice,index, self.pageRecord))
-        #     self.queryModel.setQuery(queryCondition)
-        #     self.setButtonStatus()
-        #     return
-        #
-        # # 得到模糊查询条件
-        # temp = self.searchEdit.text()
-        # s = '%'
-        # for i in range(0, len(temp)):
-        #     s = s + temp[i] + "%"
-        # queryCondition = ("SELECT * FROM Book WHERE %s LIKE '%s' ORDER BY %s " % (
-        #     conditionChoice, s,conditionChoice))
-        # self.queryModel.setQuery(queryCondition)
-        # self.totalRecord = self.queryModel.rowCount()
-        # # 当查询无记录时的操作
-        # if(self.totalRecord==0):
-        #     print(QMessageBox.information(self,"提醒","查询无记录",QMessageBox.Yes,QMessageBox.Yes))
-        #     queryCondition = "select * from Book"
-        #     self.queryModel.setQuery(queryCondition)
-        #     self.totalRecord = self.queryModel.rowCount()
-        #     self.totalPage = int((self.totalRecord + self.pageRecord - 1) / self.pageRecord)
-        #     label = "/" + str(int(self.totalPage)) + "页"
-        #     self.pageLabel.setText(label)
-        #     queryCondition = ("select * from Book ORDER BY %s  limit %d,%d " % (conditionChoice,index, self.pageRecord))
-        #     self.queryModel.setQuery(queryCondition)
-        #     self.setButtonStatus()
-        #     return
-        # self.totalPage = int((self.totalRecord + self.pageRecord - 1) / self.pageRecord)
-        # label = "/" + str(int(self.totalPage)) + "页"
-        # self.pageLabel.setText(label)
-        # queryCondition = ("SELECT * FROM Book WHERE %s LIKE '%s' ORDER BY %s LIMIT %d,%d " % (
-        #     conditionChoice, s, conditionChoice,index, self.pageRecord))
-        # self.queryModel.setQuery(queryCondition)
-        # self.setButtonStatus()
-        # return
-
-    # 点击查询
 
 
     # 向前翻页
@@ -237,6 +203,28 @@ class BookStorageViewer(QWidget):
         #client.upload(self.Filename)
         print("Ready")
         thread.start()
+    def updatefile(self):
+        # 获得Server端result.txt的内容,写入file_list.txt的内容，展示到QTableView中
+        client = client_ssl()
+        client.login('liang', 'liang')
+        thread = threading.Thread(target=client.update, args=('/ClientCache/result.txt','liang', 'liang'))
+        thread.start()
+
+        with open('./ClientCache/result.txt', 'r', encoding='utf-8') as f:
+            for line in f:
+                # Parse the JSON object
+                obj = json.loads(line)
+                # Extract the fields using regular expressions
+                filename = re.search(r'"文件名":\s*"(.+?)"', line).group(1)
+                uploader = re.search(r'"上传者":\s*"(.+?)"', line).group(1)
+                upload_time = re.search(r'"上传时间":\s*"(.+?)"', line).group(1)
+                size = re.search(r'"大小":\s*"(.+?)"', line).group(1)
+                self.results.append({filename, uploader, upload_time, size})
+        for row_num, row_data in enumerate(self.results):
+            for idx, item in enumerate(row_data):
+                qitem = QStandardItem(item)
+                self.model.setItem(row_num, idx, qitem)
+        QApplication.processEvents()
 
 
 

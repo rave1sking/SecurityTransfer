@@ -1,3 +1,4 @@
+import re
 import socket
 import ssl,time,os,struct,json,tkinter
 
@@ -91,6 +92,7 @@ class client_ssl:
                 self.ssock.send(filedata)
             fo.close()
             print('send over...')
+
             #tkinter.messagebox.showinfo('提示！', message='上传成功')
             #self.ssock.close()
         else:
@@ -179,6 +181,8 @@ class client_ssl:
                     file.write(rdata)
                 file.close()
                 print('receive done')
+
+
                 # self.ssock.close()
 
     def register(self,username,password):

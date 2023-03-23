@@ -13,7 +13,8 @@ class SignInWidget(QWidget):
     is_admin_signal = pyqtSignal()
     is_student_signal = pyqtSignal(str)
     #switch_window = QtCore.pyqtSignal()
-
+    filename = './ClientCache/result.txt'
+    results = []
 
     def __init__(self):
         super(SignInWidget, self).__init__()
