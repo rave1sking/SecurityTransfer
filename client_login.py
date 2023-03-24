@@ -5,9 +5,11 @@ from PyQt5.QtCore import *
 import qdarkstyle
 import hashlib
 from PyQt5.QtSql import *
+
+import client
 from db import *
 import Register
-
+import mainWindow2
 
 class SignInWidget(QWidget):
     is_admin_signal = pyqtSignal()
@@ -115,38 +117,31 @@ class SignInWidget(QWidget):
 
 
     def signInCheck(self):
-        UserName = self.lineEdit1.text()
-        password = self.lineEdit2.text()
-        if (UserName == "" or password == ""):
+        self.UserName = self.lineEdit1.text()
+        self.password = self.lineEdit2.text()
+        if (self.UserName == "" or self.password == ""):
             print(QMessageBox.warning(self, "警告", "账号和密码不可为空!", QMessageBox.Yes, QMessageBox.Yes))
             return
         # 打开数据库连接
         self.database = db()
         self.conn = self.database.conn
         self.cur = self.database.cur
-        sql = "SELECT * FROM t_user WHERE username ='%s'" % (UserName)
-        self.cur.execute(sql)
-        #self.cur.close()
+        self.hl = hashlib.md5()
+        self.hl.update( self.password.encode(encoding='utf-8'))
 
-        hl = hashlib.md5()
-        hl.update(password.encode(encoding='utf-8'))
+        #sql = "SELECT * FROM t_user WHERE username ='%s' and password = '%s'"
+        self.cur.execute("SELECT * FROM t_user WHERE username = %s and password = %s ", (self.UserName,  self.hl.hexdigest()))
+        # execute()函数本身就有接受SQL语句变量的参数位，可以对传入的值进行correctly转义，从而避免SQL注入的发生
+        # self.cur.close()
         res = self.cur.fetchone()
-        print(res)
-        if UserName == res[1]:
-            print("1 match")
-        if hl.hexdigest() == res[2]:
-            print("2 match")
+        #print(res)
+
         if (not res):
             print(QMessageBox.information(self, "提示", "该账号不存在!", QMessageBox.Yes, QMessageBox.Yes))
         else:
 
-            if (UserName == res[1] and hl.hexdigest() == res[2]):
-                # 如果是管理员
-                # if (query.value(3)==1):
-                #     self.is_admin_signal.emit()
-                # else:
-                #     self.is_student_signal.emit(studentId)
-                self.go_to_reg()
+            if (self.UserName == res[1] and self.hl.hexdigest() == res[2]):
+                self.go_to_main()
             else:
                 print(QMessageBox.information(self, "提示", "密码错误!", QMessageBox.Yes, QMessageBox.Yes))
         self.cur.close()
@@ -155,12 +150,14 @@ class SignInWidget(QWidget):
         self.reg_window = Register.SignUpWidget()
         self.reg_window.show()
         self.hide()
-    #def go_to_main(self):
+    def go_to_main(self):
+        self.main_window = mainWindow2.MainWindow(self.UserName,self.hl.hexdigest())
+        self.main_window.show()
+        self.hide()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon("./images/MainWindow_1.png"))
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     mainMindow = SignInWidget()
     mainMindow.show()
